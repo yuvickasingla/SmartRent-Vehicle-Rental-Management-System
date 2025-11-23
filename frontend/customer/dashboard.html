@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Dashboard | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1 id="welcomeText">Welcome, Customer</h1>
+        <p>Track your bookings, payments, and browse vehicles anytime.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <span class="label">Total Bookings</span>
+          <span class="value" id="totalBookings">0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">Active Rentals</span>
+          <span class="value" id="activeRentals">0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">Total Paid</span>
+          <span class="value" id="totalPaid">₹0</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card__title">Browse Vehicles</div>
+          <div class="card__meta">Cars & Bikes</div>
+          <p>View all available vehicles and choose the one that fits your needs.</p>
+          <a href="vehicles.html" class="btn btn-primary">View Vehicles</a>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Create Booking</div>
+          <div class="card__meta">Fast booking form</div>
+          <p>Select vehicle, choose date and optionally request a driver.</p>
+          <a href="booking_create.html" class="btn btn-primary">Book Now</a>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Your Bookings</div>
+          <div class="card__meta">Upcoming & past</div>
+          <p>See all your previous and ongoing bookings at a glance.</p>
+          <a href="bookings.html" class="btn btn-primary">View Bookings</a>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Payments</div>
+          <div class="card__meta">History & status</div>
+          <p>Track how much you’ve paid and download receipts.</p>
+          <a href="payments.html" class="btn btn-primary">View Payments</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent Customer Dashboard</span>
+  </div>
+</footer>
+
+<script>
+    // -------------------------------
+    // Check customer session
+    // -------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"   // 🔥 FIXED
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+        }
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // -------------------------------
+    // Load Customer Stats
+    // -------------------------------
+    async function loadDashboard() {
+      try {
+        const bookingsRes = await fetch(window.API_BASE_URL + "/bookings/my", {
+          method: "GET",
+          credentials: "include"     // 🔥 FIXED
+        });
+    
+        const paymentsRes = await fetch(window.API_BASE_URL + "/payments/my", {
+          method: "GET",
+          credentials: "include"     // 🔥 FIXED
+        });
+    
+        if (!bookingsRes.ok || !paymentsRes.ok) return;
+    
+        const bookings = await bookingsRes.json();
+        const payments = await paymentsRes.json();
+    
+        // Set totals
+        document.getElementById("totalBookings").textContent = bookings.length;
+    
+        const active = bookings.filter(b =>
+          b.status === "confirmed" || b.status === "pending"
+        ).length;
+    
+        document.getElementById("activeRentals").textContent = active;
+    
+        const totalPaid = payments
+          .filter(p => p.status === "paid")
+          .reduce((sum, p) => sum + p.amount, 0);
+    
+        document.getElementById("totalPaid").textContent = "₹" + totalPaid;
+    
+      } catch (err) {
+        console.error("Failed to load dashboard", err);
+      }
+    }
+    
+    // -------------------------------
+    // Logout
+    // -------------------------------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"    // 🔥 FIXED
+      });
+      window.location.href = "../login.html";
+    }
+    
+    checkSession();
+    loadDashboard();
+    </script>
+    
+
+</body>
+</html>

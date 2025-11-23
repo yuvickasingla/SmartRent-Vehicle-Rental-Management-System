@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile | Customer | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Your Profile</h1>
+        <p>Update your personal information.</p>
+      </div>
+
+      <div class="form-shell">
+        <div class="form-card">
+
+          <form id="profileForm">
+
+            <div class="field">
+              <label for="full_name">Full Name</label>
+              <input type="text" id="full_name" required>
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input type="email" id="email" required>
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input type="text" id="phone" required>
+            </div>
+
+            <div class="field">
+              <label for="license">Driving License</label>
+              <input type="text" id="license" required>
+            </div>
+
+            <p id="msg" style="color:red; display:none;"></p>
+
+            <button class="btn btn-primary" type="submit">Save Changes</button>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent — Customer Profile</span>
+  </div>
+</footer>
+
+<script>
+    // ------------------------------------------------
+    // Check customer session
+    // ------------------------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+    
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        return data.customer_id;
+    
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // ------------------------------------------------
+    // Load customer profile
+    // ------------------------------------------------
+    async function loadProfile(customerId) {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/customers/" + customerId, {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          alert("Failed to load profile.");
+          return;
+        }
+    
+        const customer = await res.json();
+    
+        document.getElementById("full_name").value = customer.name;
+        document.getElementById("email").value = customer.email;
+        document.getElementById("phone").value = customer.phone;
+        document.getElementById("license").value = customer.license_number;
+    
+        window.customerId = customerId;
+    
+      } catch (err) {
+        alert("Error loading profile");
+      }
+    }
+    
+    // ------------------------------------------------
+    // Save Changes
+    // ------------------------------------------------
+    document.getElementById("profileForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+    
+      const msg = document.getElementById("msg");
+      msg.style.display = "none";
+    
+      const body = {
+        name: document.getElementById("full_name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        license_number: document.getElementById("license").value
+      };
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/customers/" + window.customerId, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+    
+        const data = await res.json();
+    
+        if (!res.ok) {
+          msg.textContent = data.error || "Update failed.";
+          msg.style.color = "red";
+          msg.style.display = "block";
+          return;
+        }
+    
+        msg.style.color = "green";
+        msg.textContent = "Profile updated successfully!";
+        msg.style.display = "block";
+    
+      } catch(err) {
+        msg.textContent = "Server error.";
+        msg.style.color = "red";
+        msg.style.display = "block";
+      }
+    });
+    
+    // ------------------------------------------------
+    // Logout
+    // ------------------------------------------------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "../login.html";
+    }
+    
+    // ------------------------------------------------
+    // Initialize
+    // ------------------------------------------------
+    checkSession().then(id => loadProfile(id));
+    </script>
+    
+
+</body>
+</html>

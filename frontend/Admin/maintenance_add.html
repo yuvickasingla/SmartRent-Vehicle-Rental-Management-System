@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Maintenance | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+      <li class="nav__cta"><a href="../login.html">Logout</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+<section class="page-shell">
+  <div class="container">
+
+    <div class="section-header">
+      <h1>Add Maintenance Record</h1>
+      <p>Register a new maintenance entry for any vehicle.</p>
+    </div>
+
+    <p id="msg" style="margin-bottom: 10px;"></p>
+
+    <div class="form-shell">
+      <div class="form-card">
+
+        <form id="maintenanceForm">
+
+          <div class="field">
+            <label for="vehicle">Select Vehicle</label>
+            <select id="vehicle" required>
+              <option value="">Loading vehicles...</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="date">Maintenance Date</label>
+            <input type="date" id="date" required>
+          </div>
+
+          <div class="field">
+            <label for="cost">Cost (₹)</label>
+            <input type="number" id="cost" required placeholder="e.g. 1200">
+          </div>
+
+          <div class="field">
+            <label for="details">Details</label>
+            <textarea id="details" required placeholder="Describe maintenance work..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Add Record</button>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+    // ---------------------------
+    // Load Vehicles (with cookies)
+    // ---------------------------
+    async function loadVehicles() {
+      const dropdown = document.getElementById("vehicle");
+      const msg = document.getElementById("msg");
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/vehicles/", {
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          dropdown.innerHTML = "<option>Error loading vehicles</option>";
+          return;
+        }
+    
+        const vehicles = await res.json();
+        dropdown.innerHTML = "<option value=''>-- Select Vehicle --</option>";
+    
+        vehicles.forEach(v => {
+          dropdown.innerHTML += `
+            <option value="${v.id}">
+              ${v.brand} ${v.model} (${v.vehicle_number})
+            </option>
+          `;
+        });
+    
+      } catch (err) {
+        msg.style.color = "red";
+        msg.textContent = "Network error! Could not load vehicles.";
+      }
+    }
+    
+    loadVehicles();
+    
+    
+    // ---------------------------
+    // Submit maintenance form
+    // ---------------------------
+    document.getElementById("maintenanceForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+    
+      const vehicle_id = document.getElementById("vehicle").value;
+      const date = document.getElementById("date").value;
+      const cost = document.getElementById("cost").value;
+      const details = document.getElementById("details").value;
+    
+      const msg = document.getElementById("msg");
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/maintenance/", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vehicle_id, date, cost, details })
+        });
+    
+        if (!res.ok) {
+          const err = await res.json();
+          msg.style.color = "red";
+          msg.textContent = err.error || "Failed to add maintenance record.";
+          return;
+        }
+    
+        msg.style.color = "green";
+        msg.textContent = "Maintenance record added successfully! Redirecting...";
+    
+        setTimeout(() => {
+          window.location.href = "maintenance_list.html";
+        }, 1200);
+    
+      } catch (error) {
+        msg.style.color = "red";
+        msg.textContent = "Network error! Backend unreachable.";
+      }
+    });
+</script>
+    
+
+</body>
+</html>

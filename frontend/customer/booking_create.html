@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Booking | Customer | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Create Booking</h1>
+        <p>Select vehicle, choose date & optionally request a driver.</p>
+      </div>
+
+      <div class="form-shell">
+        <div class="form-card">
+          <form id="bookingForm">
+
+            <div class="field">
+              <label for="vehicle">Select Vehicle</label>
+              <select id="vehicle" name="vehicle" required>
+                <option value="">Loading...</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="start_date">Start Date</label>
+              <input type="date" id="start_date" required>
+            </div>
+
+            <div class="field">
+              <label for="end_date">End Date</label>
+              <input type="date" id="end_date" required>
+            </div>
+
+            <div class="field">
+              <label for="driver_id">Need Driver?</label>
+              <select id="driver_id">
+                <option value="">No</option>
+              </select>
+            </div>
+
+            <p id="msg" style="margin-top:10px; color:red; display:none;"></p>
+
+            <button class="btn btn-primary" type="submit">Submit Booking</button>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+    // -------------------------------
+    // Check customer session
+    // -------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"   // 🔥 REQUIRED
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+        }
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // -------------------------------
+    // Load available vehicles
+    // -------------------------------
+    async function loadVehicles() {
+      const select = document.getElementById("vehicle");
+      select.innerHTML = "<option>Loading...</option>";
+    
+      const res = await fetch(window.API_BASE_URL + "/vehicles/available", {
+        method: "GET",
+        credentials: "include"   // 🔥 FIX
+      });
+    
+      const vehicles = await res.json();
+    
+      select.innerHTML = "<option value=''>-- Select Vehicle --</option>";
+    
+      vehicles.forEach(v => {
+        select.innerHTML += `
+          <option value="${v.id}">
+            ${v.brand} ${v.model} — ₹${v.daily_rate}/day
+          </option>
+        `;
+      });
+    
+      // auto-select vehicle by query param
+      const params = new URLSearchParams(window.location.search);
+      const vehicleId = params.get("vehicle_id");
+      if (vehicleId) select.value = vehicleId;
+    }
+    
+    // -------------------------------
+    // Load available drivers
+    // -------------------------------
+    async function loadDrivers() {
+      const select = document.getElementById("driver_id");
+    
+      const res = await fetch(window.API_BASE_URL + "/drivers/available", {
+        method: "GET",
+        credentials: "include"  // 🔥 FIX
+      });
+    
+      const drivers = await res.json();
+    
+      drivers.forEach(d => {
+        select.innerHTML += `
+          <option value="${d.id}">${d.name} (${d.phone})</option>
+        `;
+      });
+    }
+    
+    // -------------------------------
+    // Submit Booking
+    // -------------------------------
+    document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+    
+      const msg = document.getElementById("msg");
+      msg.style.display = "none";
+    
+      const vehicle_id = document.getElementById("vehicle").value;
+      const start_date = document.getElementById("start_date").value;
+      const end_date = document.getElementById("end_date").value;
+      const driver_id = document.getElementById("driver_id").value || null;
+    
+      if (!vehicle_id || !start_date || !end_date) {
+        msg.textContent = "Please fill all fields.";
+        msg.style.display = "block";
+        return;
+      }
+    
+      if (new Date(end_date) < new Date(start_date)) {
+        msg.textContent = "End Date must be after Start Date.";
+        msg.style.display = "block";
+        return;
+      }
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/bookings/", {
+          method: "POST",
+          credentials: "include",   // 🔥 VERY IMPORTANT
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicle_id,
+            start_date,
+            end_date,
+            driver_id
+          })
+        });
+    
+        const data = await res.json();
+    
+        if (!res.ok) {
+          msg.textContent = data.error || "Booking failed.";
+          msg.style.display = "block";
+          return;
+        }
+    
+        // Success → redirect
+        window.location.href = "bookings.html";
+    
+      } catch(err) {
+        msg.textContent = "Server error. Try again.";
+        msg.style.display = "block";
+      }
+    });
+    
+    // -------------------------------
+    // Logout
+    // -------------------------------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"    // 🔥 FIX
+      });
+      window.location.href = "../login.html";
+    }
+    
+    checkSession();
+    loadVehicles();
+    loadDrivers();
+    </script>
+</body>
+</html>

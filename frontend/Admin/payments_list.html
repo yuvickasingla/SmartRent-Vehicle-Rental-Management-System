@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payments | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+      <li class="nav__cta"><a href="../login.html">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+<section class="page-shell">
+  <div class="container">
+
+    <div class="section-header">
+      <h1>Payments</h1>
+      <p>View all payments from customer bookings.</p>
+    </div>
+
+    <p id="msg" style="margin-bottom:10px;"></p>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>Booking ID</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Method</th>
+          </tr>
+        </thead>
+
+        <tbody id="payment-body">
+          <!-- Dynamic rows inserted here -->
+        </tbody>
+
+      </table>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+  async function loadPayments() {
+    const msg = document.getElementById("msg");
+    const tbody = document.getElementById("payment-body");
+  
+    try {
+      const [paymentsRes, bookingsRes, customersRes] = await Promise.all([
+        fetch(window.API_BASE_URL + "/payments/all", { credentials: "include" }),
+        fetch(window.API_BASE_URL + "/bookings/all", { credentials: "include" }),
+        fetch(window.API_BASE_URL + "/auth/customers", { credentials: "include" })
+      ]);
+  
+      if (!paymentsRes.ok || !bookingsRes.ok || !customersRes.ok) {
+        msg.style.color = "red";
+        msg.textContent = "Failed to fetch payments data";
+        return;
+      }
+  
+      const payments = await paymentsRes.json();
+      const bookings = await bookingsRes.json();
+      const customers = await customersRes.json();
+  
+      // Build lookup maps
+      const bookingMap = {};
+      bookings.forEach(b => {
+        bookingMap[b.id] = b;
+      });
+  
+      const customerMap = {};
+      customers.forEach(c => {
+        customerMap[c.id] = c;
+      });
+  
+      tbody.innerHTML = "";
+  
+      if (payments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:20px;">No payment records found.</td>
+          </tr>
+        `;
+        return;
+      }
+  
+      payments.forEach(payment => {
+  
+        const booking = bookingMap[payment.booking_id] || null;
+        const customer = booking ? (customerMap[booking.customer_id] || { name: "Unknown" }) : { name: "Unknown" };
+  
+        // status badge
+        let badgeClass = "badge-success";
+        if (payment.status === "pending") badgeClass = "badge-warning";
+        if (payment.status === "failed") badgeClass = "badge-danger";
+  
+        tbody.innerHTML += `
+          <tr>
+            <td>${payment.id}</td>
+            <td>${payment.booking_id}</td>
+            <td>${customer.name}</td>
+            <td>₹${payment.amount}</td>
+            <td><span class="badge ${badgeClass}">${payment.status}</span></td>
+            <td>${payment.method ? payment.method.toUpperCase() : "-"}</td>
+          </tr>
+        `;
+      });
+  
+    } catch (error) {
+      msg.style.color = "red";
+      msg.textContent = "Network error: Backend not reachable.";
+    }
+  }
+  
+  loadPayments();
+</script>
+  
+
+</body>
+</html>

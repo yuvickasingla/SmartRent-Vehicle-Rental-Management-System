@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Registration | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="static/style.css">
+  <script src="static/config.js"></script>
+
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    <a href="index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Vehicle Rentals</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="customer/vehicles.html">Browse Vehicles</a></li>
+      <li class="nav__cta">
+        <a href="login.html">Login</a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+      <div class="section-header text-center">
+        <h1>Create a Customer Account</h1>
+        <p>Admins are created separately. This page is for customer registration.</p>
+      </div>
+
+      <div class="form-shell">
+        <div class="form-card">
+          <form id="registerForm">
+
+            <div class="field">
+              <label for="full_name">Full name</label>
+              <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
+            </div>
+
+            <div class="field">
+              <label for="email">Email address</label>
+              <input type="email" id="email" name="email" required placeholder="you@example.com">
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input type="text" id="phone" name="phone" required placeholder="10 digit phone">
+            </div>
+
+            <div class="field">
+              <label for="license">Driving license number</label>
+              <input type="text" id="license" name="license" required placeholder="License number">
+            </div>
+
+            <div class="field">
+              <label for="username">Choose username</label>
+              <input type="text" id="username" name="username" required placeholder="Username for login">
+            </div>
+
+            <div class="field">
+              <label for="password">Choose password</label>
+              <input type="password" id="password" name="password" required placeholder="Password for login">
+            </div>
+
+            <p id="errorMessage" style="color:red; display:none; margin-top:10px;"></p>
+            <p id="successMessage" style="color:green; display:none; margin-top:10px;"></p>
+
+            <div style="margin-top: 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+              <button type="submit" class="btn btn-primary">Create account</button>
+              <a href="login.html" class="btn btn-subtle">Back to login</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const full_name = document.getElementById("full_name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const license = document.getElementById("license").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  const errorBox = document.getElementById("errorMessage");
+  const successBox = document.getElementById("successMessage");
+
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
+
+  const payload = {
+    username,
+    password,
+    name: full_name,
+    email,
+    phone,
+    license_number: license
+  };
+
+  try {
+    const res = await fetch(window.API_BASE_URL+"/auth/register_customer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorBox.textContent = data.error || "Registration failed.";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    successBox.textContent = "Account created successfully! Redirecting to login...";
+    successBox.style.display = "block";
+
+    setTimeout(() => {
+      window.location.href = "login.html";
+    }, 1500);
+
+  } catch (err) {
+    errorBox.textContent = "Server error. Please try again.";
+    errorBox.style.display = "block";
+  }
+});
+</script>
+
+</body>
+</html>

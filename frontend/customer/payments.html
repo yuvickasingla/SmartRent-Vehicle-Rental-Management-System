@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payments | Customer | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Payments</h1>
+        <p>Here is the history of all your payment transactions.</p>
+      </div>
+
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr>
+              <th>Payment ID</th>
+              <th>Booking ID</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Reference</th>
+            </tr>
+          </thead>
+
+          <tbody id="paymentsBody">
+            <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent — Payments</span>
+  </div>
+</footer>
+
+<script>
+    // -------------------------------
+    // Check session
+    // -------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"    // 🔥 FIXED
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+        }
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // -------------------------------
+    // Load payments
+    // -------------------------------
+    async function loadPayments() {
+      const body = document.getElementById("paymentsBody");
+      body.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Loading...</td></tr>";
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/payments/my", {
+          method: "GET",
+          credentials: "include"     // 🔥 FIXED
+        });
+    
+        if (!res.ok) {
+          body.innerHTML = "<tr><td colspan='6'>Failed to load payments.</td></tr>";
+          return;
+        }
+    
+        const payments = await res.json();
+    
+        if (payments.length === 0) {
+          body.innerHTML = "<tr><td colspan='6'>No payments found.</td></tr>";
+          return;
+        }
+    
+        body.innerHTML = ""; // Clear table
+    
+        payments.forEach(p => {
+          let badge = "";
+          if (p.status === "paid") {
+            badge = `<span class="badge badge-success">Paid</span>`;
+          } else if (p.status === "pending") {
+            badge = `<span class="badge badge-warning">Pending</span>`;
+          } else {
+            badge = `<span class="badge badge-danger">Failed</span>`;
+          }
+    
+          body.innerHTML += `
+            <tr>
+              <td>${p.id}</td>
+              <td>${p.booking_id}</td>
+              <td>₹${p.amount}</td>
+              <td>${p.method.toUpperCase()}</td>
+              <td>${badge}</td>
+              <td>${p.transaction_reference || "-"}</td>
+            </tr>
+          `;
+        });
+    
+      } catch (err) {
+        body.innerHTML = "<tr><td colspan='6'>Error loading payments.</td></tr>";
+      }
+    }
+    
+    // -------------------------------
+    // Logout
+    // -------------------------------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"   // 🔥 FIXED
+      });
+      window.location.href = "../login.html";
+    }
+    
+    checkSession();
+    loadPayments();
+</script>
+    
+</body>
+</html>

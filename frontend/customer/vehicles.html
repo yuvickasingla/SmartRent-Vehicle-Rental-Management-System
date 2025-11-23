@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Available Vehicles | Customer | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Available Vehicles</h1>
+        <p>Browse cars and bikes currently available for booking.</p>
+      </div>
+
+      <div id="vehicleGrid" class="grid"></div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+    // -------------------------------
+    // Session Check (Customer only)
+    // -------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", { 
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+    
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+        }
+    
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // -------------------------------
+    // Load Vehicles from Backend
+    // -------------------------------
+    async function loadVehicles() {
+      const grid = document.getElementById("vehicleGrid");
+      grid.innerHTML = "<p>Loading vehicles...</p>";
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/vehicles/available", {
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          grid.innerHTML = "<p>Failed to load vehicles.</p>";
+          return;
+        }
+    
+        const vehicles = await res.json();
+    
+        if (vehicles.length === 0) {
+          grid.innerHTML = "<p>No vehicles available at the moment.</p>";
+          return;
+        }
+    
+        grid.innerHTML = ""; // clear loading text
+    
+        vehicles.forEach(v => {
+          const type = v.vehicle_type === "car" ? "Car" : "Bike";
+          const price = "₹" + v.daily_rate + "/day";
+    
+          grid.innerHTML += `
+            <div class="card">
+              <div class="card__title">${v.brand} ${v.model}</div>
+              <div class="card__meta">${type} — ${price}</div>
+    
+              <p>
+                ${
+                  v.vehicle_type === "car"
+                    ? `${v.transmission || "Manual"}, ${v.seats || 4} seats`
+                    : `${v.engine_cc || "N/A"} CC, ${v.has_gear ? "Geared" : "Non-geared"}`
+                }
+              </p>
+    
+              <a href="booking_create.html?vehicle_id=${v.id}" class="btn btn-primary">
+                Book Now
+              </a>
+            </div>
+          `;
+        });
+    
+      } catch (err) {
+        grid.innerHTML = "<p>Error loading vehicles.</p>";
+      }
+    }
+    
+    // -------------------------------
+    // Logout
+    // -------------------------------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", { 
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "../login.html";
+    }
+    
+    checkSession();
+    loadVehicles();
+</script>
+    
+
+</body>
+</html>

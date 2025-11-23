@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="static/style.css">
+  <script src="static/config.js"></script>
+
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    <a href="index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Vehicle Rentals</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="customer/vehicles.html">Browse Vehicles</a></li>
+      <li class="nav__cta">
+        <a href="register.html">Register</a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+      <div class="section-header text-center">
+        <h1>Sign in to SmartRent</h1>
+        <p>Admins and customers sign in from the same page.</p>
+      </div>
+
+      <div class="form-shell">
+        <div class="form-card">
+          <form id="loginForm">
+            <div class="field">
+              <label for="role">Login as</label>
+              <select id="role" name="role">
+                <option value="customer">Customer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" required placeholder="Enter username">
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required placeholder="Enter password">
+            </div>
+
+            <p id="errorMessage" style="color:red; display:none; margin-top:10px;"></p>
+
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
+              <button type="submit" class="btn btn-primary">Sign in</button>
+              <a href="register.html" class="btn btn-subtle">Create customer account</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+// Handle login
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const roleUI = document.getElementById("role").value;  // only for UI display
+
+  const errorBox = document.getElementById("errorMessage");
+  errorBox.style.display = "none";
+
+  try {
+    const res = await fetch(window.API_BASE_URL + "/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorBox.textContent = data.error || "Login failed";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    // Redirect according to backend role
+    if (data.role === "admin") {
+      window.location.href = "Admin/dashboard.html";
+    } else {
+      window.location.href = "customer/dashboard.html";
+    }
+
+  } catch (err) {
+    errorBox.textContent = "Server error. Please try again.";
+    errorBox.style.display = "block";
+  }
+});
+</script>
+
+</body>
+</html>

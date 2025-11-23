@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drivers | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutAdmin()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Drivers List</h1>
+        <p>Manage all registered drivers in your system.</p>
+      </div>
+
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="driverTableBody">
+            <tr><td colspan="5" style="text-align:center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+
+    // ---------------------------
+    // Admin check with credentials
+    // ---------------------------
+    async function checkAdmin() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) return (window.location.href = "../login.html");
+    
+        const data = await res.json();
+        if (data.role !== "admin") {
+          window.location.href = "../login.html";
+        }
+    
+      } catch (err) {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    
+    // ---------------------------
+    // Load drivers (with cookies)
+    // ---------------------------
+    async function loadDrivers() {
+      const body = document.getElementById("driverTableBody");
+      body.innerHTML = `<tr><td colspan="5" style="text-align:center">Loading...</td></tr>`;
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/drivers/", {
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Failed to load</td></tr>`;
+          return;
+        }
+    
+        const drivers = await res.json();
+        body.innerHTML = "";
+    
+        drivers.forEach(d => {
+          const status = d.is_available
+            ? `<span class="badge badge-success">Available</span>`
+            : `<span class="badge badge-warning">On Trip</span>`;
+    
+          body.innerHTML += `
+            <tr>
+              <td>${d.id}</td>
+              <td>${d.name}</td>
+              <td>${d.phone}</td>
+              <td>${status}</td>
+              <td>
+                <button class="btn btn-danger" onclick="deleteDriver(${d.id})">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+    
+      } catch (err) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Network error</td></tr>`;
+      }
+    }
+    
+    
+    // ---------------------------
+    // Delete driver (with correct URL + cookies)
+    // ---------------------------
+    async function deleteDriver(id) {
+      if (!confirm("Delete this driver?")) return;
+    
+      try {
+        const res = await fetch(`${window.API_BASE_URL}/drivers/${id}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+    
+        if (res.ok) {
+          alert("Driver deleted");
+          loadDrivers();
+        } else {
+          alert("Failed to delete driver");
+        }
+    
+      } catch {
+        alert("Network error");
+      }
+    }
+    
+    
+    // ---------------------------
+    // Logout
+    // ---------------------------
+    async function logoutAdmin() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+    
+      window.location.href = "../login.html";
+    }
+    
+    
+    // ---------------------------
+    // Initialize
+    // ---------------------------
+    checkAdmin();
+    loadDrivers();
+    
+</script>
+    
+
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customers | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutAdmin()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+<section class="page-shell">
+  <div class="container">
+
+    <div class="section-header">
+      <h1>Customers</h1>
+      <p>Manage all users who have registered in your rental system.</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div style="margin-bottom: 1rem;">
+      <input id="searchInput" 
+             type="text" 
+             placeholder="Search by name, email, phone or ID..."
+             style="padding: 0.5rem; width: 70%;">
+      <button class="btn btn-primary" onclick="applySearch()">Search</button>
+    </div>
+
+    <!-- Sorting -->
+    <!-- <div style="margin-bottom: 1rem;">
+      <label>Sort by:</label>
+      <select id="sortBy" onchange="applySearch()" style="padding:0.4rem;">
+        <option value="id">ID</option>
+        <option value="name">Name</option>
+        <option value="email">Email</option>
+        <option value="bookings">Total Bookings</option>
+      </select>
+    </div> -->
+
+    <!-- Table -->
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Total Bookings</th>
+          </tr>
+        </thead>
+
+        <tbody id="customerTableBody">
+          <tr>
+            <td colspan="6" style="text-align:center;">Loading...</td>
+          </tr>
+        </tbody>
+
+      </table>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+    let customers = [];
+    let bookings = [];
+    
+    // ---------------------------
+    // Admin Session Check
+    // ---------------------------
+    async function checkAdmin() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) return (window.location.href = "../login.html");
+    
+        const data = await res.json();
+        if (data.role !== "admin") {
+          window.location.href = "../login.html";
+        }
+      } catch (e) {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // ---------------------------
+    // Load customers + bookings
+    // ---------------------------
+    async function loadData() {
+      const body = document.getElementById("customerTableBody");
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>`;
+    
+      try {
+        const custRes = await fetch(window.API_BASE_URL + "/auth/customers", {
+          credentials: "include"
+        });
+        customers = await custRes.json();
+    
+        const bookRes = await fetch(window.API_BASE_URL + "/bookings/all", {
+          credentials: "include"
+        });
+        bookings = await bookRes.json();
+    
+        renderTable(customers);
+    
+      } catch (err) {
+        body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Failed to load data</td></tr>`;
+      }
+    }
+    
+    // ---------------------------
+    // Render Table
+    // ---------------------------
+    function renderTable(list) {
+      const body = document.getElementById("customerTableBody");
+      body.innerHTML = "";
+    
+      list.forEach(c => {
+        const totalBookings = bookings.filter(b => b.customer_id === c.id).length;
+    
+        body.innerHTML += `
+          <tr>
+            <td>${c.id}</td>
+            <td>${c.name}</td>
+            <td>${c.email}</td>
+            <td>${c.phone}</td>
+            <td>${totalBookings}</td>
+          </tr>
+        `;
+      });
+    }
+    
+    // ---------------------------
+    // Search + Sort
+    // ---------------------------
+    function applySearch() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const sortField = document.getElementById("sortBy").value;
+    
+      let filtered = customers.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        c.email.toLowerCase().includes(query) ||
+        c.phone.includes(query) ||
+        c.id.toString().includes(query)
+      );
+    
+      filtered.sort((a, b) => {
+        if (sortField === "bookings") {
+          const bA = bookings.filter(bk => bk.customer_id === a.id).length;
+          const bB = bookings.filter(bk => bk.customer_id === b.id).length;
+          return bA - bB;
+        }
+        return a[sortField] > b[sortField] ? 1 : -1;
+      });
+    
+      renderTable(filtered);
+    }
+    
+    // ---------------------------
+    // Logout
+    // ---------------------------
+    async function logoutAdmin() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "../login.html";
+    }
+    
+    // ---------------------------
+    // Initialize
+    // ---------------------------
+    checkAdmin().then(loadData);
+</script>
+    
+
+</body>
+</html>

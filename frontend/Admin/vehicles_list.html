@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vehicles | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+
+      <li class="nav__cta"><a href="#" onclick="logoutAdmin()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+
+<section class="page-shell">
+  <div class="container">
+
+    <div class="section-header">
+      <h1>All Vehicles</h1>
+      <p>Manage all cars and bikes registered in the fleet.</p>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Number</th>
+            <th>Rent/Day</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="vehicleTableBody">
+          <tr><td colspan="8" style="text-align:center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+    // ---------------------------
+    // Load vehicles dynamically
+    // ---------------------------
+    async function loadVehicles() {
+      const table = document.getElementById("vehicleTableBody");
+      table.innerHTML = `<tr><td colspan="8" style="text-align:center">Loading...</td></tr>`;
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + "/vehicles/", {
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          table.innerHTML = `<tr><td colspan="8" style="text-align:center;color:red">Failed to load vehicles.</td></tr>`;
+          return;
+        }
+    
+        const vehicles = await res.json();
+        table.innerHTML = "";
+    
+        vehicles.forEach(v => {
+          const status = v.status === "available"
+            ? `<span class="badge badge-success">Available</span>`
+            : `<span class="badge badge-danger">${v.status}</span>`;
+    
+          table.innerHTML += `
+            <tr>
+              <td>${v.id}</td>
+              <td>${v.vehicle_type}</td>
+              <td>${v.brand}</td>
+              <td>${v.model_name}</td>          <!-- FIXED -->
+              <td>${v.vehicle_number}</td>      <!-- FIXED -->
+              <td>₹${v.daily_rate}</td>
+              <td>${status}</td>
+              <td>
+                <button class="btn btn-danger" onclick="deleteVehicle(${v.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+    
+      } catch {
+        table.innerHTML = `<tr><td colspan="8" style="text-align:center;color:red">Network error.</td></tr>`;
+      }
+    }
+    
+    // ---------------------------
+    // Delete vehicle
+    // ---------------------------
+    async function deleteVehicle(id) {
+      if (!confirm("Are you sure you want to delete this vehicle?")) return;
+    
+      try {
+        const res = await fetch(window.API_BASE_URL + `/vehicles/${id}`, {  // FIXED URL
+          method: "DELETE",
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          alert("Failed to delete vehicle");
+          return;
+        }
+    
+        alert("Vehicle deleted");
+        loadVehicles();
+    
+      } catch {
+        alert("Error deleting vehicle");
+      }
+    }
+    
+    // ---------------------------
+    // Logout
+    // ---------------------------
+    async function logoutAdmin() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "../login.html";
+    }
+    
+    loadVehicles();
+</script>
+    
+
+</body>
+</html>

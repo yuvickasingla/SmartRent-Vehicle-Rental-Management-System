@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Bookings | Customer | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Customer Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles.html">Vehicles</a></li>
+      <li><a href="booking_create.html">Create Booking</a></li>
+      <li><a href="bookings.html">My Bookings</a></li>
+      <li><a href="payments.html">Payments</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li class="nav__cta"><a href="#" onclick="logoutUser()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>My Bookings</h1>
+        <p>View your upcoming, active, and past bookings.</p>
+      </div>
+
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Vehicle</th>
+              <th>Date</th>
+              <th>Days</th>
+              <th>Driver</th>
+              <th>Status</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+
+          <tbody id="bookingTableBody">
+            <tr><td colspan="7" style="text-align:center;">Loading bookings...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent — Customer Bookings</span>
+  </div>
+</footer>
+
+<script>
+    // ---------- Session Check ----------
+    async function checkSession() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"   // 🔥 REQUIRED
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+        if (data.role !== "customer") {
+          window.location.href = "../login.html";
+        }
+      } catch {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // ---------- Status Badge Renderer ----------
+    function statusBadge(status) {
+      switch (status) {
+        case "completed":
+          return `<span class="badge badge-success">Completed</span>`;
+        case "confirmed":
+          return `<span class="badge badge-info">Confirmed</span>`;
+        case "pending":
+          return `<span class="badge badge-warning">Pending</span>`;
+        case "cancelled":
+          return `<span class="badge badge-danger">Cancelled</span>`;
+        default:
+          return status;
+      }
+    }
+    
+    // ---------- Load Bookings ----------
+    async function loadBookings() {
+      const table = document.getElementById("bookingTableBody");
+      table.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading...</td></tr>`;
+    
+      try {
+        // fetch all 3 in parallel WITH COOKIES
+        const [bookingsRes, vehiclesRes, driversRes] = await Promise.all([
+          fetch(window.API_BASE_URL + "/bookings/my", {
+            method: "GET",
+            credentials: "include"        // 🔥 FIXED
+          }),
+          fetch(window.API_BASE_URL + "/vehicles/", {
+            method: "GET",
+            credentials: "include"        // 🔥 FIXED
+          }),
+          fetch(window.API_BASE_URL + "/drivers/", {
+            method: "GET",
+            credentials: "include"        // 🔥 FIXED
+          })
+        ]);
+    
+        if (!bookingsRes.ok) {
+          table.innerHTML = `<tr><td colspan="7" style="text-align:center;">Failed to load.</td></tr>`;
+          return;
+        }
+    
+        const bookings = await bookingsRes.json();
+        const vehicles = vehiclesRes.ok ? await vehiclesRes.json() : [];
+        const drivers = driversRes.ok ? await driversRes.json() : [];
+    
+        if (bookings.length === 0) {
+          table.innerHTML = `<tr><td colspan="7" style="text-align:center;">No bookings found.</td></tr>`;
+          return;
+        }
+    
+        table.innerHTML = ""; // clear loading
+    
+        bookings.forEach(b => {
+          const vehicle = vehicles.find(v => v.id === b.vehicle_id);
+          const driver = drivers.find(d => d.id === b.driver_id);
+    
+          const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : "Unknown";
+    
+          const start = b.start_date ? b.start_date.split("T")[0] : "-";
+          const end = b.end_date ? b.end_date.split("T")[0] : "-";
+    
+          const days = (start && end)
+            ? Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)))
+            : 1;
+    
+          table.innerHTML += `
+            <tr>
+              <td>#${b.id}</td>
+              <td>${vehicleName}</td>
+              <td>${start}</td>
+              <td>${days}</td>
+              <td>${driver ? driver.name : "No"}</td>
+              <td>${statusBadge(b.status)}</td>
+              <td>₹${b.total_amount}</td>
+            </tr>
+          `;
+        });
+    
+      } catch (err) {
+        console.error(err);
+        table.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading bookings.</td></tr>`;
+      }
+    }
+    
+    // ---------- Logout ----------
+    async function logoutUser() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"     // 🔥 FIXED
+      });
+      window.location.href = "../login.html";
+    }
+    
+    checkSession();
+    loadBookings();
+    </script>
+    
+</body>
+</html>

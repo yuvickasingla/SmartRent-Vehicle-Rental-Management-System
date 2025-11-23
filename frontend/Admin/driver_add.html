@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Driver | Admin | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+      <li class="nav__cta"><a href="../login.html">Logout</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+<section class="page-shell">
+  <div class="container">
+
+    <div class="section-header">
+      <h1>Add New Driver</h1>
+      <p>Register a new driver in your system.</p>
+    </div>
+
+    <div class="form-shell">
+      <div class="form-card">
+
+        <form id="driverForm">
+
+          <div class="field">
+            <label for="dname">Full Name</label>
+            <input type="text" id="dname" required placeholder="Driver name">
+          </div>
+
+          <div class="field">
+            <label for="dphone">Phone Number</label>
+            <input type="text" id="dphone" required placeholder="9876543210">
+          </div>
+
+          <div class="field">
+            <label for="dlicense">License Number</label>
+            <input type="text" id="dlicense" required placeholder="DL012345">
+          </div>
+
+          <button type="submit" class="btn btn-primary">Add Driver</button>
+
+          <p id="msg" style="margin-top:10px;"></p>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent</span>
+  </div>
+</footer>
+
+<script>
+
+    // ---------------------------
+    // Check Admin Session
+    // ---------------------------
+    async function checkAdmin() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) return (window.location.href = "../login.html");
+    
+        const data = await res.json();
+        if (data.role !== "admin") {
+          window.location.href = "../login.html";
+        }
+      } catch (e) {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    
+    // ---------------------------
+    // Add Driver Form Submit
+    // ---------------------------
+    document.getElementById("driverForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+    
+      const name = document.getElementById("dname").value.trim();
+      const phone = document.getElementById("dphone").value.trim();
+      const license_number = document.getElementById("dlicense").value.trim();
+    
+      const msg = document.getElementById("msg");
+    
+      try {
+        const response = await fetch(window.API_BASE_URL + "/drivers/", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name,
+            phone,
+            license_number
+          })
+        });
+    
+        if (!response.ok) {
+          const err = await response.json();
+          msg.style.color = "red";
+          msg.textContent = err.error || "Failed to add driver";
+          return;
+        }
+    
+        msg.style.color = "green";
+        msg.textContent = "Driver added successfully! Redirecting...";
+    
+        setTimeout(() => {
+          window.location.href = "drivers_list.html";
+        }, 1200);
+    
+      } catch (error) {
+        msg.style.color = "red";
+        msg.textContent = "Network error! Backend not reachable.";
+      }
+    });
+    
+    
+    // ---------------------------
+    // Initialize
+    // ---------------------------
+    checkAdmin();
+    
+</script>
+    
+
+</body>
+</html>

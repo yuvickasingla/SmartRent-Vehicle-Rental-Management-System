@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartRent | Fleet & Vehicle Rental</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="static/style.css">
+  <script src="static/config.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    <a href="index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Vehicle Rentals</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links" id="navbar-links">
+      <!-- These will be dynamically updated using JS -->
+      <li><a href="index.html">Home</a></li>
+      <li><a href="customer/vehicles.html">Browse Vehicles</a></li>
+
+      <li id="nav-login"><a href="login.html">Login</a></li>
+      <li id="nav-register" class="nav__cta">
+        <a href="register.html"><span>Get Started</span></a>
+      </li>
+
+      <li id="nav-dashboard" style="display:none;">
+        <a href="#">Dashboard</a>
+      </li>
+      <li id="nav-logout" style="display:none;">
+        <a href="#" onclick="logoutUser()">Logout</a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero__layout">
+      <div class="hero__content">
+        <div class="hero__eyebrow">
+          <span></span> Smarter Fleet & Vehicle Rentals
+        </div>
+        <h1>Manage your rentals like a pro – cars, bikes, drivers & payments.</h1>
+        <p class="hero__subtitle">
+          SmartRent helps admins control the full fleet and lets customers book
+          vehicles and drivers in a clean, simple interface.
+        </p>
+        <div class="hero__actions">
+          <a href="login.html" class="btn btn-primary">Customer / Admin Login</a>
+          <a href="customer/vehicles.html" class="btn btn-outline">View Vehicles</a>
+        </div>
+        <div class="hero__meta">
+          <span><strong>Admins</strong> manage vehicles, drivers & customers.</span>
+          <span><strong>Customers</strong> book rentals & view their payments.</span>
+        </div>
+      </div>
+
+      <div class="hero__visual">
+        <div class="hero__visual-main">
+          FLEET DASHBOARD
+          <div class="hero__stat-pill">
+            <span></span>
+            <div>Live bookings & payments</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-shell">
+    <div class="container">
+      <div class="section-header text-center">
+        <h2>Two clear roles. One unified system.</h2>
+        <p>Admin controls everything. Customers only manage their own rentals.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Admin Experience</div>
+              <div class="card__meta">Full control over fleet & users</div>
+            </div>
+          </div>
+          <p>
+            Admins can add and update vehicles, drivers and customers. They can
+            see all bookings, all payments and all maintenance history.
+          </p>
+          <div class="card__footer">
+            <span class="badge badge-success">Full access</span>
+            <a href="login.html" class="btn btn-subtle">Admin Login</a>
+          </div>
+        </div>
+
+        <div class="card card--soft">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Customer Experience</div>
+              <div class="card__meta">Simple, focused, only their data</div>
+            </div>
+          </div>
+          <p>
+            Customers can register, log in, browse available vehicles, create bookings,
+            optionally request drivers and view their own bookings and payments.
+          </p>
+          <div class="card__footer">
+            <span class="badge badge-warning">Limited access</span>
+            <a href="register.html" class="btn btn-subtle">Create Customer Account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent – Fleet & Vehicle Rental System</span>
+  </div>
+</footer>
+
+<script>
+/* Check login session and update navbar */
+async function checkSession() {
+  try {
+    const res = await fetch(window.API_BASE_URL+"/auth/login", { method: "GET" });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    updateNavbar(data.role);
+  } catch (err) {
+    console.log("Not logged in.");
+  }
+}
+
+function updateNavbar(role) {
+  document.getElementById("nav-login").style.display = "none";
+  document.getElementById("nav-register").style.display = "none";
+
+  document.getElementById("nav-logout").style.display = "block";
+
+  const dash = document.getElementById("nav-dashboard");
+
+  if (role === "admin") {
+    dash.style.display = "block";
+    dash.children[0].href = "Admin/dashboard.html";
+  } else if (role === "customer") {
+    dash.style.display = "block";
+    dash.children[0].href = "customer/dashboard.html";
+  }
+}
+
+async function logoutUser() {
+  await fetch(window.API_BASE_URL+"/auth/logout", { method: "POST" });
+  window.location.href = "index.html";
+}
+
+checkSession();
+</script>
+
+</body>
+</html>

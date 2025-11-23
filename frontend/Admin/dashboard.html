@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard | SmartRent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="../static/config.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+    
+    <a href="../index.html" class="nav__brand">
+      <div class="nav__logo"></div>
+      <div class="nav__brand-text">
+        <span>SmartRent</span>
+        <span>Admin Panel</span>
+      </div>
+    </a>
+
+    <input type="checkbox" id="nav-toggle" class="nav__toggle">
+    <label for="nav-toggle" class="nav__burger">☰</label>
+
+    <ul class="nav__links">
+
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="vehicles_list.html">Vehicles</a></li>
+      <li><a href="vehicle_add.html">Add Vehicle</a></li>
+      <li><a href="drivers_list.html">Drivers</a></li>
+      <li><a href="driver_add.html">Add Driver</a></li>
+      <li><a href="customers_list.html">Customers</a></li>
+      <li><a href="bookings_list.html">Bookings</a></li>
+      <li><a href="payments_list.html">Payments</a></li>
+      <li><a href="maintenance_list.html">Maintenance</a></li>
+      <li><a href="maintenance_add.html">Add Maintenance</a></li>
+
+      <li class="nav__cta"><a href="#" onclick="logoutAdmin()">Logout</a></li>
+    </ul>
+
+  </div>
+</header>
+
+
+<main>
+  <section class="page-shell">
+    <div class="container">
+
+      <div class="section-header">
+        <h1>Admin Dashboard</h1>
+        <p>Complete overview of your fleet, customers, drivers & performance.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <span class="label">Total Vehicles</span>
+          <span class="value" id="statVehicles">--</span>
+        </div>
+
+        <div class="stat-pill">
+          <span class="label">Active Bookings</span>
+          <span class="value" id="statActiveBookings">--</span>
+        </div>
+
+        <div class="stat-pill">
+          <span class="label">Drivers</span>
+          <span class="value" id="statDrivers">--</span>
+        </div>
+
+        <div class="stat-pill">
+          <span class="label">Registered Customers</span>
+          <span class="value" id="statCustomers">--</span>
+        </div>
+      </div>
+
+
+      <div class="grid">
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Vehicle Management</div>
+              <div class="card__meta">Cars + Bikes</div>
+            </div>
+          </div>
+          <p>View all vehicles, edit details, and manage availability.</p>
+          <a href="vehicles_list.html" class="btn btn-primary">Manage Vehicles</a>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Drivers</div>
+              <div class="card__meta">Staff directory</div>
+            </div>
+          </div>
+          <p>Manage driver details, availability, and assignments.</p>
+          <a href="drivers_list.html" class="btn btn-primary">Manage Drivers</a>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Customer Records</div>
+              <div class="card__meta">Profiles + history</div>
+            </div>
+          </div>
+          <p>View all registered customers and their activity.</p>
+          <a href="customers_list.html" class="btn btn-primary">Manage Customers</a>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Bookings & Payments</div>
+              <div class="card__meta">Monitor activity</div>
+            </div>
+          </div>
+          <p>Track every booking and payment in the system.</p>
+          <a href="bookings_list.html" class="btn btn-primary">View Bookings</a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+</main>
+
+
+<footer>
+  <div class="container">
+    <span>© 2025 SmartRent — Admin Dashboard</span>
+  </div>
+</footer>
+
+<script>
+    // ----------------------------
+    // Admin Login Check
+    // ----------------------------
+    async function checkAdmin() {
+      try {
+        const res = await fetch(window.API_BASE_URL + "/auth/login", {
+          method: "GET",
+          credentials: "include"
+        });
+    
+        if (!res.ok) {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+        const data = await res.json();
+    
+        if (data.role !== "admin") {
+          window.location.href = "../login.html";
+          return;
+        }
+    
+      } catch (err) {
+        window.location.href = "../login.html";
+      }
+    }
+    
+    // ----------------------------
+    // Load Dashboard Stats
+    // ----------------------------
+    async function loadStats() {
+    
+      // Vehicles
+      const vRes = await fetch(window.API_BASE_URL + "/vehicles/", {
+        credentials: "include"
+      });
+      const vehicles = await vRes.json();
+      document.getElementById("statVehicles").textContent = vehicles.length;
+    
+      // Drivers
+      const dRes = await fetch(window.API_BASE_URL + "/drivers/", {
+        credentials: "include"
+      });
+      const drivers = await dRes.json();
+      document.getElementById("statDrivers").textContent = drivers.length;
+    
+      // Customers
+      const cRes = await fetch(window.API_BASE_URL + "/auth/customers", {
+        credentials: "include"
+      });
+      const customers = await cRes.json();
+      document.getElementById("statCustomers").textContent = customers.length;
+    
+      // Bookings
+      const bRes = await fetch(window.API_BASE_URL + "/bookings/all", {
+        credentials: "include"
+      });
+      const bookings = await bRes.json();
+    
+      const active = bookings.filter(
+        b => b.status === "pending" || b.status === "confirmed"
+      ).length;
+    
+      document.getElementById("statActiveBookings").textContent = active;
+    }
+    
+    // ----------------------------
+    // Logout
+    // ----------------------------
+    async function logoutAdmin() {
+      await fetch(window.API_BASE_URL + "/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+    
+      window.location.href = "../login.html";
+    }
+    
+    // Initialize
+    checkAdmin();
+    loadStats();
+</script>
+    
+
+</body>
+</html>
